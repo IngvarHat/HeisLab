@@ -121,7 +121,7 @@ int main(){
                         elevio_motorDirection(DIRN_UP);
                         if (orderList[i].floor==floor){
                             elevio_motorDirection(DIRN_STOP); 
-                            void removeOrder(int i);
+                            void removeOrder(int i); 
                         }
                          
                         
