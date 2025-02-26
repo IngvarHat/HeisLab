@@ -24,6 +24,13 @@ void addOrder(int floor, ButtonType button) {
     orderCount++;
 }
 
+void removeOrder(int index) {
+    for (int i = index; i < orderCount - 1; i++) {
+        orderList[i] = orderList[i + 1];
+    }
+    orderCount--;
+}
+
 void printOrders() {
     printf("Current orders: \n");
     for (int i = 0; i < orderCount; i++){
@@ -129,14 +136,24 @@ int main(){
         StopButton();
         
         int nextOrder = findNextOrder(floor, direction);
-        if (nextOrder != -1) {
+        while (nextOrder != -1) {
             if (nextOrder > floor) {
                 elevio_motorDirection(DIRN_UP);
+                while (floor < nextOrder) {
+                    floor = elevio_floorSensor();
+                    StopButton();
+                }
             } else if (nextOrder < floor) {
                 elevio_motorDirection(DIRN_DOWN);
+                while (floor > nextOrder) {
+                    floor = elevio_floorSensor();
+                    StopButton();
+                }
             }
-        } else {
             elevio_motorDirection(DIRN_STOP);
+            removeOrder(nextOrder);
+            printOrders();
+            nextOrder = findNextOrder(floor, direction);
         }
 
         nanosleep(&(struct timespec){0, 20*1000*1000}, NULL);
