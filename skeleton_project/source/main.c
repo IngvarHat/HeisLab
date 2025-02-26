@@ -27,6 +27,18 @@ void addOrder(int floor, ButtonType button) {
     orderCount++;
 }
 
+void removeOrder(int orderIndex){
+    if (orderIndex <0 || orderIndex >= orderCount){
+        return; 
+    }
+
+    for (int i=orderIndex; i<orderCount-1; i++){
+        orderList[i]=orderList[i+1]; 
+    }
+
+    orderCount--;
+}
+
 void printOrders() {
     printf("Current orders: \n");
     for (int i = 0; i < orderCount; i++){
@@ -101,6 +113,23 @@ int main(){
         //    StopButton();
         //}
         elevio_motorDirection(DIRN_STOP);
+
+        for(int f=0; f<N_FLOORS; f++){
+            for(int b=0; b < N_BUTTONS; b++){
+                for(int i=0; i<orderCount; i++){
+                    if(orderList[i].floor>floor){
+                        elevio_motorDirection(DIRN_UP);
+                        if (orderList[i].floor==floor){
+                            elevio_motorDirection(DIRN_STOP); 
+                            void removeOrder(int i);
+                        }
+                         
+                        
+                    }
+
+                }
+            }
+        }
 
         if(floor == 0){
             elevio_motorDirection(DIRN_UP);
