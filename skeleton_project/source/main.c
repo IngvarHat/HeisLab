@@ -67,14 +67,26 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
                 return orderList[i].floor;
             }
         }
+        // If no orders above, check for orders below
+        for (int i = 0; i < orderCount; i++) {
+            if (orderList[i].floor < currentFloor) {
+                return orderList[i].floor;
+            }
+        }
     } else if (direction == DIRN_DOWN) {
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor < currentFloor) {
                 return orderList[i].floor;
             }
         }
+        // If no orders below, check for orders above
+        for (int i = 0; i < orderCount; i++) {
+            if (orderList[i].floor > currentFloor) {
+                return orderList[i].floor;
+            }
+        }
     }
-    return -1; // No orders in the current direction
+    return -1; // No orders
 }
 
 int main(){
