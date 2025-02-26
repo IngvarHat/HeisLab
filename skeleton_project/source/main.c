@@ -24,11 +24,16 @@ void addOrder(int floor, ButtonType button) {
     orderCount++;
 }
 
-void removeOrder(int index) {
-    for (int i = index; i < orderCount - 1; i++) {
-        orderList[i] = orderList[i + 1];
+void removeOrder(int floor) {
+    for (int i = 0; i < orderCount; i++) {
+        if (orderList[i].floor == floor) {
+            for (int j = i; j < orderCount - 1; j++) {
+                orderList[j] = orderList[j + 1];
+            }
+            orderCount--;
+            break;
+        }
     }
-    orderCount--;
 }
 
 void printOrders() {
