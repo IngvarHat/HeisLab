@@ -72,7 +72,7 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
                 return orderList[i].floor;
             }
         }
-        // If no orders above, check for orders below
+        // If no orders above, check for orders below and change direction
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor < currentFloor) {
                 return orderList[i].floor;
@@ -84,7 +84,7 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
                 return orderList[i].floor;
             }
         }
-        // If no orders below, check for orders above
+        // If no orders below, check for orders above and change direction
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor > currentFloor) {
                 return orderList[i].floor;
@@ -157,7 +157,7 @@ int main(){
         
         int nextOrder = findNextOrder(floor, direction);
         while (nextOrder != -1) {
-            if (nextOrder > floor) {
+            if (nextOrder > floor && direction == DIRN_UP) {
                 elevio_motorDirection(DIRN_UP);
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
@@ -165,7 +165,7 @@ int main(){
                     checkButtonPresses();
                     updateButtonLamp();
                 }
-            } else if (nextOrder < floor) {
+            } else if (nextOrder < floor && direction == DIRN_DOWN) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
@@ -178,6 +178,11 @@ int main(){
             removeOrder(nextOrder);
             printOrders();
             nextOrder = findNextOrder(floor, direction);
+        }
+
+        // Change direction if no more orders in the current direction
+        if (nextOrder == -1) {
+            direction = (direction == DIRN_UP) ? DIRN_DOWN : DIRN_UP;
         }
 
         nanosleep(&(struct timespec){0, 20*1000*1000}, NULL);
