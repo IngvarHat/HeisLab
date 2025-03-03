@@ -68,25 +68,25 @@ void StopButton() {
 int findNextOrder(int currentFloor, MotorDirection direction) {
     if (direction == DIRN_UP) {
         for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor > currentFloor && orderList[i].button == 1) { // 1 for up
+            if (orderList[i].floor > currentFloor && (orderList[i].button == 0 || orderList[i].button == 2)) { // 0 for up, 2 for inside
                 return orderList[i].floor;
             }
         }
         // If no orders above in the same direction, check for orders below in the opposite direction
         for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor < currentFloor && orderList[i].button == 0) { // 0 for down
+            if (orderList[i].floor < currentFloor && (orderList[i].button == 1 || orderList[i].button == 2)) { // 1 for down, 2 for inside
                 return orderList[i].floor;
             }
         }
     } else if (direction == DIRN_DOWN) {
         for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor < currentFloor && orderList[i].button == 0) { // 0 for down
+            if (orderList[i].floor < currentFloor && (orderList[i].button == 1 || orderList[i].button == 2)) { // 1 for down, 2 for inside
                 return orderList[i].floor;
             }
         }
         // If no orders below in the same direction, check for orders above in the opposite direction
         for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor > currentFloor && orderList[i].button == 1) { // 1 for up
+            if (orderList[i].floor > currentFloor && (orderList[i].button == 0 || orderList[i].button == 2)) { // 0 for up, 2 for inside
                 return orderList[i].floor;
             }
         }
