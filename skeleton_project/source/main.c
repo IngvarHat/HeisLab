@@ -130,6 +130,20 @@ void checkFloor_up(int currentFloor, int nextOrder){
         }
     }
 }
+
+
+
+void checkFloor_down(int currentFloor, int nextOrder){
+    for (int i=0; i<orderCount; i++){
+        if(orderList[i].floor !=nextOrder ||orderList[i].floor<currentFloor ||orderList[i].button==0){
+            elevio_motorDirection(DIRN_DOWN);
+            if(orderList[i].floor==currentFloor){
+                handleFloorStop(orderList[i].floor); 
+            }
+  
+        }
+    }
+}
 int main(){
     elevio_init();
     int floor = elevio_floorSensor();  
