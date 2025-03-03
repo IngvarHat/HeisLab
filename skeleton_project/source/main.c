@@ -162,7 +162,7 @@ int main(){
                 }
             } else if (nextOrder < floor) {
                 elevio_motorDirection(DIRN_DOWN);
-                while (floor > nextOrder) {
+                while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
                     StopButton();
                 }
