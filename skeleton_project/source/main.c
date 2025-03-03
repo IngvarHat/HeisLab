@@ -24,9 +24,9 @@ void addOrder(int floor, ButtonType button) {
     orderCount++;
 }
 
-void removeOrder(int floor) {
+void removeOrder(int floor, ButtonType button) {
     for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor) {
+        if (orderList[i].floor == floor && orderList[i].button == button) {
             for (int j = i; j < orderCount - 1; j++) {
                 orderList[j] = orderList[j + 1];
             }
@@ -107,6 +107,12 @@ void checkButtonPresses() {
     }
 }
 
+void openDoors() {
+    elevio_doorOpenLamp(1);
+    nanosleep(&(struct timespec){3, 0}, NULL); // Open doors for 3 seconds
+    elevio_doorOpenLamp(0);
+}
+
 int main(){
     elevio_init();
     int floor = elevio_floorSensor();  
@@ -175,7 +181,10 @@ int main(){
                 }
             }
             elevio_motorDirection(DIRN_STOP);
-            removeOrder(nextOrder);
+            openDoors(); // Open doors when the elevator stops at the floor
+            // Find the button type for the next order
+            ButtonType button = orderList[nextOrder].button;
+            removeOrder(nextOrder, button);
             printOrders();
             nextOrder = findNextOrder(floor, direction);
         }
