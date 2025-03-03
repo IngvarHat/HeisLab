@@ -118,41 +118,38 @@ void handleFloorStop(int floor){
  
 }
 
-
-void checkFloor_up(int currentFloor, int nextOrder){
-    for (int i=0; i<orderCount; i++){
-        if(orderList[i].floor !=nextOrder && orderList[i].floor>currentFloor && orderList[i].button==0){
+void checkOver(int floor, int nextOrder){
+    for (int i = 0; i < orderCount; i++) {
+        if (orderList[i].floor == floor && orderList[i].button == 0) {
+            handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_UP);
-            if(orderList[i].floor==currentFloor){
-                handleFloorStop(orderList[i].floor); 
-            }
-  
         }
     }
 }
 
-
-
-void checkFloor_down(int currentFloor, int nextOrder){
-    for (int i=0; i<orderCount; i++){
-        if(orderList[i].floor !=nextOrder && orderList[i].floor<currentFloor && orderList[i].button==1){
+void checkUnder(int floor, int nextOrder){
+    for (int i = 0; i < orderCount; i++) {
+        if (orderList[i].floor == floor && orderList[i].button == 1) {
+            handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_DOWN);
-            if(orderList[i].floor==currentFloor){
-                handleFloorStop(orderList[i].floor); 
-            }
-  
         }
     }
 }
 
+void checkInsideOver(int floor, int nextOrder){
+    for (int i = 0; i < orderCount; i++) {
+        if (orderList[i].floor == floor && orderList[i].button == 2) {
+            handleFloorStop(orderList[i].floor);
+            elevio_motorDirection(DIRN_UP);
+        }
+    }
+}
 
-void checkFloor_elevator(int currentFloor, int nextOrder){
-    for (int i=0; i<orderCount; i++){
-        if(orderList[i].floor !=nextOrder && orderList[i].floor<currentFloor && orderList[i].button==2){
-            if(orderList[i].floor==currentFloor){
-                handleFloorStop(orderList[i].floor); 
-            }
-  
+void checkInsideUnder(int floor, int nextOrder){
+    for (int i = 0; i < orderCount; i++) {
+        if (orderList[i].floor == floor && orderList[i].button == 2) {
+            handleFloorStop(orderList[i].floor);
+            elevio_motorDirection(DIRN_DOWN);
         }
     }
 }
@@ -215,11 +212,11 @@ int main(){
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
                     StopButton();
-                    checkFloor_up(floor,nextOrder);
+                    checkOver(floor, nextOrder);
+                    checkInsideOver(floor, nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
                     updateFloorIndicator(floor);
-                    checkFloor_elevator(floor,nextOrder);
                 }
                 handleFloorStop(floor); 
             } else if (nextOrder < floor) {
@@ -227,11 +224,11 @@ int main(){
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
                     StopButton();
-                    checkFloor_down(floor,nextOrder);
+                    checkInsideUnder(floor, nextOrder);
+                    checkUnder(floor, nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
                     updateFloorIndicator(floor);
-                    checkFloor_elevator(floor,nextOrder);
                 }
                 handleFloorStop(floor); 
             }
