@@ -121,7 +121,7 @@ void handleFloorStop(int floor){
 
 void checkFloor_up(int currentFloor, int nextOrder){
     for (int i=0; i<orderCount; i++){
-        if(orderList[i].floor !=nextOrder ||orderList[i].floor>currentFloor ||orderList[i].button==0){
+        if(orderList[i].floor !=nextOrder && orderList[i].floor>currentFloor && orderList[i].button==0){
             elevio_motorDirection(DIRN_UP);
             if(orderList[i].floor==currentFloor){
                 handleFloorStop(orderList[i].floor); 
@@ -135,13 +135,31 @@ void checkFloor_up(int currentFloor, int nextOrder){
 
 void checkFloor_down(int currentFloor, int nextOrder){
     for (int i=0; i<orderCount; i++){
-        if(orderList[i].floor !=nextOrder ||orderList[i].floor<currentFloor ||orderList[i].button==0){
+        if(orderList[i].floor !=nextOrder && orderList[i].floor<currentFloor && orderList[i].button==1){
             elevio_motorDirection(DIRN_DOWN);
             if(orderList[i].floor==currentFloor){
                 handleFloorStop(orderList[i].floor); 
             }
   
         }
+    }
+}
+
+
+void checkFloor_elevator(int currentFloor, int nextOrder){
+    for (int i=0; i<orderCount; i++){
+        if(orderList[i].floor !=nextOrder && orderList[i].floor<currentFloor && orderList[i].button==2){
+            if(orderList[i].floor==currentFloor){
+                handleFloorStop(orderList[i].floor); 
+            }
+  
+        }
+    }
+}
+
+void updateFloorIndicator(floor){
+    if(floor >= 0 && floor < 4){
+        elevio_floorIndicator(floor);
     }
 }
 int main(){
@@ -164,9 +182,7 @@ int main(){
         }
 
         StopButton();
-        if(floor >= 0 && floor < 4){
-            elevio_floorIndicator(floor);
-        }
+        updateFloorIndicator(floor);
     }
     
     MotorDirection direction = DIRN_UP;
@@ -202,6 +218,8 @@ int main(){
                     checkFloor_up(floor,nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
+                    updateFloorIndicator(floor);
+                    checkFloor_elevator(floor,nextOrder);
                 }
                 handleFloorStop(floor); 
             } else if (nextOrder < floor) {
@@ -212,6 +230,8 @@ int main(){
                     checkFloor_down(floor,nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
+                    updateFloorIndicator(floor);
+                    checkFloor_elevator(floor,nextOrder);
                 }
                 handleFloorStop(floor); 
             }
