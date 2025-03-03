@@ -179,14 +179,15 @@ int main(){
                     checkButtonPresses();
                     updateButtonLamp();
                 }
+            } else if (nextOrder == floor) {
+                elevio_motorDirection(DIRN_STOP);
+                openDoors(); // Open doors when the elevator stops at the floor
+                // Find the button type for the next order
+                ButtonType button = orderList[nextOrder].button;
+                removeOrder(nextOrder, button);
+                printOrders();
+                nextOrder = findNextOrder(floor, direction);
             }
-            elevio_motorDirection(DIRN_STOP);
-            openDoors(); // Open doors when the elevator stops at the floor
-            // Find the button type for the next order
-            ButtonType button = orderList[nextOrder].button;
-            removeOrder(nextOrder, button);
-            printOrders();
-            nextOrder = findNextOrder(floor, direction);
         }
 
         // Change direction if no more orders in the current direction
