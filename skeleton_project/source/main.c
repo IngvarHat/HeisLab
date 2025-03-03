@@ -94,6 +94,19 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
     return -1; // No orders
 }
 
+void checkButtonPresses() {
+    for(int f = 0; f < N_FLOORS; f++){
+        for(int b = 0; b < N_BUTTONS; b++){
+            int btnPressed = elevio_callButton(f, b);
+            if (btnPressed){
+                printf("Button pressed: Floor %d, button %d\n ", f, b);
+                addOrder(f, b);
+                printOrders();   
+            }
+        }
+    }
+}
+
 int main(){
     elevio_init();
     int floor = elevio_floorSensor();  
@@ -131,17 +144,7 @@ int main(){
             direction = DIRN_DOWN;
         }
 
-        for(int f = 0; f < N_FLOORS; f++){
-            for(int b = 0; b < N_BUTTONS; b++){
-                int btnPressed = elevio_callButton(f, b);
-                if (btnPressed){
-                    printf("Button pressed: Floor %d, button %d\n ", f, b);
-                    addOrder(f, b);
-                    printOrders();   
-                }
-            }
-        }
-
+        checkButtonPresses();
         updateButtonLamp();
 
         if(elevio_obstruction()){
@@ -159,12 +162,16 @@ int main(){
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
                     StopButton();
+                    checkButtonPresses();
+                    updateButtonLamp();
                 }
             } else if (nextOrder < floor) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
                     StopButton();
+                    checkButtonPresses();
+                    updateButtonLamp();
                 }
             }
             elevio_motorDirection(DIRN_STOP);
