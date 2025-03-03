@@ -107,6 +107,15 @@ void checkButtonPresses() {
     }
 }
 
+void handleFloorStop(int floor) {
+    elevio_motorDirection(DIRN_STOP);
+    elevio_doorOpenLamp(1);
+    nanosleep(&(struct timespec){1, 0}, NULL); // Keep the door open for 1 second
+    elevio_doorOpenLamp(0);
+    removeOrder(floor);
+    printOrders();
+}
+
 int main(){
     elevio_init();
     int floor = elevio_floorSensor();  
@@ -165,6 +174,7 @@ int main(){
                     checkButtonPresses();
                     updateButtonLamp();
                 }
+                handleFloorStop(nextOrder);
             } else if (nextOrder < floor && direction == DIRN_DOWN) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
@@ -173,10 +183,8 @@ int main(){
                     checkButtonPresses();
                     updateButtonLamp();
                 }
+                handleFloorStop(nextOrder);
             }
-            elevio_motorDirection(DIRN_STOP);
-            removeOrder(nextOrder);
-            printOrders();
             nextOrder = findNextOrder(floor, direction);
         }
 
