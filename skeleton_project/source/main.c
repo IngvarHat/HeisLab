@@ -199,6 +199,7 @@ int main(){
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
                     StopButton();
+                    checkFloor_up(floor,nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
                 }
@@ -208,6 +209,7 @@ int main(){
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
                     StopButton();
+                    checkFloor_down(floor,nextOrder);
                     checkButtonPresses();
                     updateButtonLamp();
                 }
