@@ -61,7 +61,10 @@ void updateButtonLamp() {
 void StopButton() {
     if (elevio_stopButton()){
         elevio_motorDirection(DIRN_STOP);
-        exit(0);
+        for(int i=0; i<orderCount; i++){
+            removeOrder(orderList[i].floor);
+            elevio_buttonLamp(orderList[i].floor,orderList[i].button,0);
+        }
     }
 }
 
@@ -97,7 +100,7 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
 void handleFloorStop(int floor){
     elevio_motorDirection(DIRN_STOP); 
     elevio_doorOpenLamp(1); 
-    nanosleep(&(struct timespec){1,0,},NULL);
+    nanosleep(&(struct timespec){3,0,},NULL);
     elevio_doorOpenLamp(0); 
     removeOrder(floor); 
     printOrders();
