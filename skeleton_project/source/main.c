@@ -66,7 +66,7 @@ void StopButton() {
 }
 
 int findNextOrder(int currentFloor, MotorDirection direction) {
-    if (direction == DIRN_UP) {
+    if (direction == DIRN_UP || direction == DIRN_STOP) {
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor > currentFloor) {
                 return orderList[i].floor;
@@ -103,7 +103,7 @@ void handleFloorStop(int floor){
     printOrders();
 }
 
-void checkButtonPresses(int floor) {
+void checkButtonPresses(int floor, MotorDirection direction) {
     for(int f = 0; f < N_FLOORS; f++){
         for(int b = 0; b < N_BUTTONS; b++){
             int btnPressed = elevio_callButton(f, b);
@@ -111,13 +111,18 @@ void checkButtonPresses(int floor) {
                 printf("Button pressed: Floor %d, button %d\n ", f, b);
                 addOrder(f, b);
                 printOrders();   
-                if(floor == f){
+                if(floor == f && direction == DIRN_STOP){
+                    handleFloorStop(floor);
+                } else if (floor == 0 && floor == f){
+                    handleFloorStop(floor);
+                } else if (floor == 3 && floor == f){
                     handleFloorStop(floor);
                 }
             }
         }
     }
 }
+
 
 void checkOver(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
@@ -196,7 +201,7 @@ int main(){
             direction = DIRN_DOWN;
         }
 
-        checkButtonPresses(floor);
+        checkButtonPresses(floor, direction);
         updateButtonLamp();
 
         if(elevio_obstruction()){
@@ -216,7 +221,7 @@ int main(){
                     StopButton();
                     checkOver(floor, nextOrder);
                     checkInsideOver(floor, nextOrder);
-                    checkButtonPresses(floor);
+                    checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
                 }
@@ -228,13 +233,14 @@ int main(){
                     StopButton();
                     checkInsideUnder(floor, nextOrder);
                     checkUnder(floor, nextOrder);
-                    checkButtonPresses(floor);
+                    checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
                 }
                 handleFloorStop(floor); 
             }
 
+            direction = DIRN_STOP;
             elevio_motorDirection(DIRN_STOP);
             removeOrder(nextOrder);
             printOrders();
