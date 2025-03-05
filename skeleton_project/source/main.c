@@ -111,10 +111,19 @@ void checkButtonPresses(int floor) {
                 printf("Button pressed: Floor %d, button %d\n ", f, b);
                 addOrder(f, b);
                 printOrders();   
-                if(floor == f){
-                    handleFloorStop(floor);
-                }
             }
+        }
+    }
+}
+
+void open_door(int floor, MotorDirection direction){
+    for(int i =0; i<orderCount; i++){
+        if(orderList[i].floor==floor && direction==DIRN_STOP){
+            handleFloorStop(floor); 
+        } else if (orderList[i].floor==floor && floor==0){
+            handleFloorStop(floor); 
+        } else if (orderList[i].floor==floor && floor==3){
+            handleFloorStop(floor); 
         }
     }
 }
@@ -168,10 +177,9 @@ int main(){
     printf("Press the stop button on the elevator panel to exit\n");
     bool kalibrering = false;
 
-    elevio_motorDirection(DIRN_DOWN);
-
     // Oppstart - Flytter til etg 1 (0) bestillinger tas imot 
     while(kalibrering == false){
+        elevio_motorDirection(DIRN_DOWN);
         updateButtonLamp();
         floor = elevio_floorSensor();
     
@@ -219,6 +227,7 @@ int main(){
                     checkButtonPresses(floor);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    open_door(floor, direction);
                 }
                 handleFloorStop(floor); 
             } else if (nextOrder < floor) {
@@ -231,11 +240,13 @@ int main(){
                     checkButtonPresses(floor);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    open_door(floor,direction);
                 }
                 handleFloorStop(floor); 
             }
 
             elevio_motorDirection(DIRN_STOP);
+            direction=DIRN_STOP; 
             removeOrder(nextOrder);
             printOrders();
             nextOrder = findNextOrder(floor, direction);
