@@ -22,6 +22,7 @@ void addOrder(int floor, ButtonType button) {
     orderList[orderCount].floor = floor;
     orderList[orderCount].button = button;
     orderCount++;
+    printf("Ordercount: %d\n", orderCount); 
 }
 
 void removeOrder(int floor) {
@@ -76,8 +77,13 @@ void StopButton() {
             // Keep the elevator stopped while the button is held down
             nanosleep(&(struct timespec){0, 100*1000*1000}, NULL); // Sleep for 100ms
         }
+        while (floor==-1){
+            elevio_motorDirection(DIRN_UP);
+        }
+        
 
         elevio_stopLamp(0); // Turn off the stop button light
+
     }
 }
 
