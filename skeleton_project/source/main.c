@@ -175,80 +175,92 @@ int main(){
     int floor = elevio_floorSensor();  
     printf("=== Example Program ===\n");
     printf("Press the stop button on the elevator panel to exit\n");
+
+    typedef enum { INIT, CALIBRATING, IDLE, MOVING_UP, MOVING_DOWN, STOPPED } State;
+    State state = INIT;
+    MotorDirection direction = DIRN_STOP;
     bool kalibrering = false;
 
-    elevio_motorDirection(DIRN_DOWN);
-
-    // Oppstart - Flytter til etg 1 (0) bestillinger tas imot 
-    while(kalibrering == false){
-        updateButtonLamp();
+    while (1) {
         floor = elevio_floorSensor();
-    
-        if(floor == 0){
-            printf("%d", kalibrering);
-            kalibrering = true;
-        }
-
-        StopButton();
+        updateButtonLamp();
         updateFloorIndicator(floor);
-    }
-    
-    MotorDirection direction = DIRN_UP;
+        StopButton();
 
-    while(kalibrering == true){
-        floor = elevio_floorSensor();
-        elevio_motorDirection(DIRN_STOP);
+        switch (state) {
+            case INIT:
+                elevio_motorDirection(DIRN_DOWN);
+                state = CALIBRATING;
+                break;
 
-        if(floor == 0){
-            direction = DIRN_UP;
-        } else if(floor == N_FLOORS-1){
-            direction = DIRN_DOWN;
+            case CALIBRATING:
+                if (floor == 0) {
+                    printf("%d", kalibrering);
+                    kalibrering = true;
+                    elevio_motorDirection(DIRN_STOP);
+                    state = IDLE;
+                }
+                break;
+
+            case IDLE:
+                if (orderCount > 0) {
+                    int nextOrder = findNextOrder(floor, direction);
+                    if (nextOrder > floor) {
+                        direction = DIRN_UP;
+                        state = MOVING_UP;
+                    } else if (nextOrder < floor) {
+                        direction = DIRN_DOWN;
+                        state = MOVING_DOWN;
+                    }
+                }
+                break;
+
+            case MOVING_UP:
+                elevio_motorDirection(DIRN_UP);
+                while (floor < findNextOrder(floor, direction)) {
+                    floor = elevio_floorSensor();
+                    StopButton();
+                    checkOver(floor, findNextOrder(floor, direction));
+                    checkInsideOver(floor, findNextOrder(floor, direction));
+                    checkButtonPresses(floor, direction);
+                    updateButtonLamp();
+                    updateFloorIndicator(floor);
+                }
+                handleFloorStop(floor);
+                state = IDLE;
+                break;
+
+            case MOVING_DOWN:
+                elevio_motorDirection(DIRN_DOWN);
+                while (floor > findNextOrder(floor, direction) || floor == -1) {
+                    floor = elevio_floorSensor();
+                    StopButton();
+                    checkInsideUnder(floor, findNextOrder(floor, direction));
+                    checkUnder(floor, findNextOrder(floor, direction));
+                    checkButtonPresses(floor, direction);
+                    updateButtonLamp();
+                    updateFloorIndicator(floor);
+                }
+                handleFloorStop(floor);
+                state = IDLE;
+                break;
+
+            case STOPPED:
+                elevio_motorDirection(DIRN_STOP);
+                if (!elevio_stopButton() && orderCount > 0) {
+                    state = IDLE;
+                }
+                break;
         }
 
-        checkButtonPresses(floor, direction);
-        updateButtonLamp();
+        if (elevio_stopButton()) {
+            state = STOPPED;
+        }
 
-        if(elevio_obstruction()){
+        if (elevio_obstruction()) {
             elevio_stopLamp(1);
         } else {
             elevio_stopLamp(0);
-        }
-        
-        StopButton();
-        
-        int nextOrder = findNextOrder(floor, direction);
-        while (nextOrder != -1) {
-            if (nextOrder > floor) {
-                elevio_motorDirection(DIRN_UP);
-                while (floor < nextOrder) {
-                    floor = elevio_floorSensor();
-                    StopButton();
-                    checkOver(floor, nextOrder);
-                    checkInsideOver(floor, nextOrder);
-                    checkButtonPresses(floor, direction);
-                    updateButtonLamp();
-                    updateFloorIndicator(floor);
-                }
-                handleFloorStop(floor); 
-            } else if (nextOrder < floor) {
-                elevio_motorDirection(DIRN_DOWN);
-                while (floor > nextOrder || floor == -1) {
-                    floor = elevio_floorSensor();
-                    StopButton();
-                    checkInsideUnder(floor, nextOrder);
-                    checkUnder(floor, nextOrder);
-                    checkButtonPresses(floor, direction);
-                    updateButtonLamp();
-                    updateFloorIndicator(floor);
-                }
-                handleFloorStop(floor); 
-            }
-
-            direction = DIRN_STOP;
-            elevio_motorDirection(DIRN_STOP);
-            removeOrder(nextOrder);
-            printOrders();
-            nextOrder = findNextOrder(floor, direction);
         }
 
         nanosleep(&(struct timespec){0, 20*1000*1000}, NULL);
