@@ -5,41 +5,62 @@
 #include "driver/elevio.h"
 #include "stdbool.h"
 
-typedef struct {
+typedef struct Order {
     int floor; 
     ButtonType button;
+    struct Order* next;
 } Order;
 
-Order orderList [N_FLOORS * N_BUTTONS];
-int orderCount = 0;
+Order* orderList = NULL;
 
 void addOrder(int floor, ButtonType button) {
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor && orderList[i].button == button) {
-            return;
+    Order* newOrder = (Order*)malloc(sizeof(Order));
+    newOrder->floor = floor;
+    newOrder->button = button;
+    newOrder->next = NULL;
+
+    if (orderList == NULL) {
+        orderList = newOrder;
+    } else {
+        Order* current = orderList;
+        while (current->next != NULL) {
+            if (current->floor == floor && current->button == button) {
+                free(newOrder);
+                return;
+            }
+            current = current->next;
         }
+        current->next = newOrder;
     }
-    orderList[orderCount].floor = floor;
-    orderList[orderCount].button = button;
-    orderCount++;
 }
 
 void removeOrder(int floor) {
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor) {
-            for (int j = i; j < orderCount - 1; j++) {
-                orderList[j] = orderList[j + 1];
+    Order* current = orderList;
+    Order* previous = NULL;
+
+    while (current != NULL) {
+        if (current->floor == floor) {
+            if (previous == NULL) {
+                orderList = current->next;
+            } else {
+                previous->next = current->next;
             }
-            orderCount--;
-            break;
+            free(current);
+            return;
         }
+        previous = current;
+        current = current->next;
     }
 }
 
 void printOrders() {
     printf("Current orders: \n");
-    for (int i = 0; i < orderCount; i++){
-        printf("Order %d: Floor %d, Button %d\n", i, orderList[i].floor, orderList[i].button);
+    Order* current = orderList;
+    int i = 0;
+    while (current != NULL) {
+        printf("Order %d: Floor %d, Button %d\n", i, current->floor, current->button);
+        current = current->next;
+        i++;
     }
 }
 
@@ -47,11 +68,13 @@ void updateButtonLamp() {
     for (int f = 0; f < N_FLOORS; f++) {
         for (int b = 0; b < N_BUTTONS; b++) {
             int isOrder = 0;
-            for (int i = 0; i < orderCount; i++) {
-                if (orderList[i].floor == f && orderList[i].button == b) {
+            Order* current = orderList;
+            while (current != NULL) {
+                if (current->floor == f && current->button == b) {
                     isOrder = 1;
                     break;
                 }
+                current = current->next;
             }
             elevio_buttonLamp(f, b, isOrder);
         }
@@ -62,7 +85,11 @@ void StopButton() {
     if (elevio_stopButton()) {
         elevio_motorDirection(DIRN_STOP);
         elevio_stopLamp(1); // Turn on the stop button light
-        orderCount = 0; // Delete all orders
+        while (orderList != NULL) {
+            Order* temp = orderList;
+            orderList = orderList->next;
+            free(temp);
+        }
         updateButtonLamp(); // Reset the lights
 
         int floor = elevio_floorSensor();
@@ -83,28 +110,34 @@ void StopButton() {
 
 int findNextOrder(int currentFloor, MotorDirection direction) {
     if (direction == DIRN_UP || direction == DIRN_STOP) {
-        for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor > currentFloor) {
-                return orderList[i].floor;
+        Order* current = orderList;
+        while (current != NULL) {
+            if (current->floor > currentFloor) {
+                return current->floor;
             }
+            current = current->next;
         }
-        // If no orders above, check for orders below
-        for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor < currentFloor) {
-                return orderList[i].floor;
+        current = orderList;
+        while (current != NULL) {
+            if (current->floor < currentFloor) {
+                return current->floor;
             }
+            current = current->next;
         }
     } else if (direction == DIRN_DOWN) {
-        for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor < currentFloor) {
-                return orderList[i].floor;
+        Order* current = orderList;
+        while (current != NULL) {
+            if (current->floor < currentFloor) {
+                return current->floor;
             }
+            current = current->next;
         }
-        // If no orders below, check for orders above
-        for (int i = 0; i < orderCount; i++) {
-            if (orderList[i].floor > currentFloor) {
-                return orderList[i].floor;
+        current = orderList;
+        while (current != NULL) {
+            if (current->floor > currentFloor) {
+                return current->floor;
             }
+            current = current->next;
         }
     }
     return -1; // No orders
@@ -141,36 +174,36 @@ void checkButtonPresses(int floor, MotorDirection direction) {
 
 
 void checkOver(int floor, int nextOrder){
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor && orderList[i].button == 0 && orderList[i].floor != nextOrder) {
-            handleFloorStop(orderList[i].floor);
+    for (Order* current = orderList; current != NULL; current = current->next) {
+        if (current->floor == floor && current->button == 0 && current->floor != nextOrder) {
+            handleFloorStop(current->floor);
             elevio_motorDirection(DIRN_UP);
         }
     }
 }
 
 void checkUnder(int floor, int nextOrder){
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor && orderList[i].button == 1 && orderList[i].floor != nextOrder) {
-            handleFloorStop(orderList[i].floor);
+    for (Order* current = orderList; current != NULL; current = current->next) {
+        if (current->floor == floor && current->button == 1 && current->floor != nextOrder) {
+            handleFloorStop(current->floor);
             elevio_motorDirection(DIRN_DOWN);
         }
     }
 }
 
 void checkInsideOver(int floor, int nextOrder){
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor && orderList[i].button == 2 && orderList[i].floor != nextOrder) {
-            handleFloorStop(orderList[i].floor);
+    for (Order* current = orderList; current != NULL; current = current->next) {
+        if (current->floor == floor && current->button == 2 && current->floor != nextOrder) {
+            handleFloorStop(current->floor);
             elevio_motorDirection(DIRN_UP);
         }
     }
 }
 
 void checkInsideUnder(int floor, int nextOrder){
-    for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor && orderList[i].button == 2 && orderList[i].floor != nextOrder) {
-            handleFloorStop(orderList[i].floor);
+    for (Order* current = orderList; current != NULL; current = current->next) {
+        if (current->floor == floor && current->button == 2 && current->floor != nextOrder) {
+            handleFloorStop(current->floor);
             elevio_motorDirection(DIRN_DOWN);
         }
     }
