@@ -255,7 +255,7 @@ int main(){
                 }
                 handleFloorStop(floor); 
             }
-
+            printf("nextorder: %d\n ", nextOrder);
             direction = DIRN_STOP;
             elevio_motorDirection(DIRN_STOP);
             removeOrder(nextOrder);
