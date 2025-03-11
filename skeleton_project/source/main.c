@@ -196,23 +196,22 @@ int main(){
 
     elevio_motorDirection(DIRN_DOWN);
 
-    // Oppstart - Flytter til etasje 1 (0) og tar imot bestillinger 
-    while (kalibrering == false) {
+    // Oppstart: Flytter til etasje 1 (0) og tar imot bestillinger 
+    while (!kalibrering) {
         updateButtonLamp();
         floor = elevio_floorSensor();
     
         if (floor == 0) {
-            printf("%d", kalibrering);
             kalibrering = true;
         }
-
         StopButton();
         updateFloorIndicator(floor);
     }
     
     MotorDirection direction = DIRN_UP;
 
-    while (kalibrering == true) {
+    // Endret hovedløkke til en uendelig løkke slik at vi stadig sjekker for nye ordrer
+    while (1) {
         floor = elevio_floorSensor();
         elevio_motorDirection(DIRN_STOP);
 
@@ -233,8 +232,9 @@ int main(){
         
         StopButton();
         
+        // Søk etter en ny bestilling, selv om nextOrder kan være NULL etter et stopp
         nextOrder = findNextOrder(floor, direction);
-        while (nextOrder != NULL) {
+        if (nextOrder != NULL) {
             if (nextOrder->floor > floor) {
                 elevio_motorDirection(DIRN_UP);
                 while (floor < nextOrder->floor) {
@@ -260,14 +260,10 @@ int main(){
                 }
                 handleFloorStop(floor); 
             }
-
-            direction = DIRN_STOP;
-            elevio_motorDirection(DIRN_STOP);
             removeOrder(nextOrder->floor);
             printOrders();
-            nextOrder = findNextOrder(floor, direction);
         }
-
+        
         nanosleep(&(struct timespec){0, 20 * 1000 * 1000}, NULL);
     }
 
