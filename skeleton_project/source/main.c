@@ -263,7 +263,7 @@ int main(){
                     handleFloorStop(floor); 
                 }
                 
-            } else if (nextOrder < floor || nextOrder <whole_floor) {
+            } else if (nextOrder < floor || nextOrder <=whole_floor) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
