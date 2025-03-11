@@ -252,7 +252,7 @@ int main(){
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
-                    lastwholefloor();
+                    lastwholefloor(floor);
                     if (stop_press==1)
                     {
                         break;
@@ -273,7 +273,7 @@ int main(){
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
-                    lastwholefloor();
+                    lastwholefloor(floor);
                     if (stop_press==1)
                     {
                         break;
