@@ -58,30 +58,6 @@ void updateButtonLamp() {
     }
 }
 
-void StopButton(int floor, MotorDirection direction, int nextorder) {
-    if (elevio_stopButton()) {
-        elevio_motorDirection(DIRN_STOP);
-        elevio_stopLamp(1); // Turn on the stop button light
-        orderCount = 0; // Delete all orders
-        updateButtonLamp(); // Reset the lights
-
-        int floor = elevio_floorSensor();
-        if (floor != -1) { // If the elevator is on a floor
-            elevio_doorOpenLamp(1); // Open the doors
-            nanosleep(&(struct timespec){3, 0}, NULL); // Wait for 3 seconds
-            elevio_doorOpenLamp(0); // Close the doors
-        }
-
-        while (elevio_stopButton()) {
-            // Keep the elevator stopped while the button is held down
-            nanosleep(&(struct timespec){0, 100*1000*1000}, NULL); // Sleep for 100ms
-        }
-
-        elevio_stopLamp(0); // Turn off the stop button light
-        nextorder=findNextOrder(floor,direction);
-    }
-}
-
 int findNextOrder(int currentFloor, MotorDirection direction) {
     if (direction == DIRN_UP || direction == DIRN_STOP) {
         for (int i = 0; i < orderCount; i++) {
@@ -110,6 +86,32 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
     }
     return -1; // No orders
 }
+
+
+void StopButton(int floor, MotorDirection direction, int nextorder) {
+    if (elevio_stopButton()) {
+        elevio_motorDirection(DIRN_STOP);
+        elevio_stopLamp(1); // Turn on the stop button light
+        orderCount = 0; // Delete all orders
+        updateButtonLamp(); // Reset the lights
+
+        int floor = elevio_floorSensor();
+        if (floor != -1) { // If the elevator is on a floor
+            elevio_doorOpenLamp(1); // Open the doors
+            nanosleep(&(struct timespec){3, 0}, NULL); // Wait for 3 seconds
+            elevio_doorOpenLamp(0); // Close the doors
+        }
+
+        while (elevio_stopButton()) {
+            // Keep the elevator stopped while the button is held down
+            nanosleep(&(struct timespec){0, 100*1000*1000}, NULL); // Sleep for 100ms
+        }
+
+        elevio_stopLamp(0); // Turn off the stop button light
+        nextorder=findNextOrder(floor,direction);
+    }
+}
+
 
 void handleFloorStop(int floor){
     elevio_motorDirection(DIRN_STOP); 
