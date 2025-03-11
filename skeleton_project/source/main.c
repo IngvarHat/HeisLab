@@ -121,6 +121,7 @@ void checkButtonPresses(int floor, MotorDirection direction) {
                 } else if (floor == 3 && floor == f){
                     handleFloorStop(floor);
                 }
+                findNextOrder(floor, direction);
             }
         }
     }
