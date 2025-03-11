@@ -13,6 +13,8 @@ typedef struct {
 Order orderList [N_FLOORS * N_BUTTONS];
 int orderCount = 0;
 
+int stop_press=0; 
+
 void addOrder(int floor, ButtonType button) {
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == button) {
@@ -88,9 +90,10 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
 }
 
 
-void StopButton(int floor, MotorDirection direction, int nextorder) {
+void StopButton() {
     if (elevio_stopButton()) {
         elevio_motorDirection(DIRN_STOP);
+        stop_press=1;
         elevio_stopLamp(1); // Turn on the stop button light
         orderCount = 0; // Delete all orders
         updateButtonLamp(); // Reset the lights
@@ -108,7 +111,6 @@ void StopButton(int floor, MotorDirection direction, int nextorder) {
         }
 
         elevio_stopLamp(0); // Turn off the stop button light
-        nextorder=findNextOrder(floor,direction);
     }
 }
 
@@ -204,7 +206,7 @@ int main(){
             kalibrering = true;
         }
 
-        //StopButton();
+        StopButton();
         updateFloorIndicator(floor);
     }
     
@@ -229,7 +231,7 @@ int main(){
             elevio_stopLamp(0);
         }
         
-        //StopButton();
+        StopButton();
         
         int nextOrder = findNextOrder(floor, direction);
         while (nextOrder != -1) {
@@ -237,14 +239,22 @@ int main(){
                 elevio_motorDirection(DIRN_UP);
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
-                    StopButton(floor,direction, nextOrder);
+                    StopButton();
                     checkOver(floor, nextOrder);
                     checkInsideOver(floor, nextOrder);
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    if (stop_press==1)
+                    {
+                        break;
+                    }
+                    
                 }
-                handleFloorStop(floor); 
+                if(floor!=-1){
+                    handleFloorStop(floor); 
+                }
+                
             } else if (nextOrder < floor) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
@@ -255,14 +265,21 @@ int main(){
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    if (stop_press==1)
+                    {
+                        break;
+                    }
                 }
-                handleFloorStop(floor); 
+                if (floor!=-1){
+                    handleFloorStop(floor);
+                }
+                
             }
-            printf("nextorder: %d\n ", nextOrder);
-            direction = DIRN_STOP;
-            elevio_motorDirection(DIRN_STOP);
-            removeOrder(nextOrder);
+            //direction = DIRN_STOP;
+            //elevio_motorDirection(DIRN_STOP);
+            //removeOrder(nextOrder);
             printOrders();
+            stop_press==0;
             nextOrder = findNextOrder(floor, direction);
         }
 
