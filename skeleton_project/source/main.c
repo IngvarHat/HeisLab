@@ -2,48 +2,100 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <time.h>
+#include <stdbool.h>
+#include <string.h>
 #include "driver/elevio.h"
-#include "stdbool.h"
+
 
 typedef struct {
     int floor; 
     ButtonType button;
 } Order;
 
-Order orderList [N_FLOORS * N_BUTTONS];
+// Dynamisk array for ordrer
+Order *orderList = NULL;
 int orderCount = 0;
+int orderCapacity = 0;
 
+// Initialiserer den dynamiske orderList med en startkapasitet
+void initOrderList() {
+    orderCapacity = 10;  // Startkapasitet for 10 ordrer
+    orderList = malloc(orderCapacity * sizeof(Order));
+    if (orderList == NULL) {
+        perror("Klarte ikke å allokere minne for orderList");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Legger til en ordre dersom den ikke allerede finnes
 void addOrder(int floor, ButtonType button) {
+    // Sjekk for duplikater
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == button) {
             return;
         }
+    }
+    // Øker kapasiteten om nødvendig
+    if (orderCount == orderCapacity) {
+        orderCapacity *= 2;
+        Order *temp = realloc(orderList, orderCapacity * sizeof(Order));
+        if (temp == NULL) {
+            perror("Klarte ikke å reallokere minne for orderList");
+            exit(EXIT_FAILURE);
+        }
+        orderList = temp;
     }
     orderList[orderCount].floor = floor;
     orderList[orderCount].button = button;
     orderCount++;
 }
 
-void removeOrder(int floor) {
+// Fjerner en spesifikk ordre (basert på floor og button) fra den dynamiske arrayen.
+// Etter fjerning flyttes de påfølgende elementene, og arrayet reallokeres til ny størrelse.
+void removeOrder(int floor, ButtonType button) {
+    int index = -1;
     for (int i = 0; i < orderCount; i++) {
-        if (orderList[i].floor == floor) {
-            for (int j = i; j < orderCount - 1; j++) {
-                orderList[j] = orderList[j + 1];
-            }
-            orderCount--;
+        if (orderList[i].floor == floor && orderList[i].button == button) {
+            index = i;
             break;
         }
     }
+    if (index == -1) return; // Ordren finnes ikke
+
+    // Flytt elementene etter den slettede ett hakk mot starten
+    if (index < orderCount - 1) {
+        memmove(&orderList[index], &orderList[index + 1], (orderCount - index - 1) * sizeof(Order));
+    }
+    orderCount--;
+
+    // Realloker arrayet slik at ubrukt minne fjernes.
+    if (orderCount > 0) {
+        Order *temp = realloc(orderList, orderCount * sizeof(Order));
+        if (temp != NULL) {
+            orderList = temp;
+            orderCapacity = orderCount;
+        }
+    } else {
+        free(orderList);
+        orderList = NULL;
+        orderCapacity = 0;
+    }
 }
 
-void DeleteAllorders(orderList){
-    memset(orderList, 0, sizeof(orderList));
-    orderCount=0; 
-
+// Fjerner alle ordrer fra den dynamiske arrayen.
+// Etter at alle ordrer er slettet, reallokeres arrayet til en ny tom array slik at vi kan fortsette.
+void RemoveAllOrders() {
+    free(orderList);
+    orderList = NULL;
+    orderCount = 0;
+    orderCapacity = 0;
+    // Reinitialiser arrayet slik at nye ordrer kan legges til
+    initOrderList();
+    updateButtonLamp();
 }
 
 void printOrders() {
-    printf("Current orders: \n");
+    printf("Current orders (%d):\n", orderCount);
     for (int i = 0; i < orderCount; i++){
         printf("Order %d: Floor %d, Button %d\n", i, orderList[i].floor, orderList[i].button);
     }
@@ -67,23 +119,22 @@ void updateButtonLamp() {
 void StopButton() {
     if (elevio_stopButton()) {
         elevio_motorDirection(DIRN_STOP);
-        elevio_stopLamp(1); // Turn on the stop button light
-        orderCount = 0; // Delete all orders
-        updateButtonLamp(); // Reset the lights
+        elevio_stopLamp(1); // Slå på stop-knappen sitt lys
+        RemoveAllOrders(); // Sletter alle ordrer
 
         int floor = elevio_floorSensor();
-        if (floor != -1) { // If the elevator is on a floor
-            elevio_doorOpenLamp(1); // Open the doors
-            nanosleep(&(struct timespec){3, 0}, NULL); // Wait for 3 seconds
-            elevio_doorOpenLamp(0); // Close the doors
+        if (floor != -1) { // Dersom heisen er på etasje
+            elevio_doorOpenLamp(1); // Åpne dørene
+            nanosleep(&(struct timespec){3, 0}, NULL); // Vent 3 sekunder
+            elevio_doorOpenLamp(0); // Lukk dørene
         }
 
         while (elevio_stopButton()) {
-            // Keep the elevator stopped while the button is held down
-            nanosleep(&(struct timespec){0, 100*1000*1000}, NULL); // Sleep for 100ms
+            // Hold heisen stoppet så lenge knappen holdes nede
+            nanosleep(&(struct timespec){0, 100*1000*1000}, NULL); // Sleep 100ms
         }
 
-        elevio_stopLamp(0); // Turn off the stop button light
+        elevio_stopLamp(0); // Slå av stop-knappen sitt lys
     }
 }
 
@@ -94,7 +145,7 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
                 return orderList[i].floor;
             }
         }
-        // If no orders above, check for orders below
+        // Dersom ingen ordrer over, se etter ordrer under
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor < currentFloor) {
                 return orderList[i].floor;
@@ -106,45 +157,51 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
                 return orderList[i].floor;
             }
         }
-        // If no orders below, check for orders above
+        // Dersom ingen ordrer under, se etter ordrer over
         for (int i = 0; i < orderCount; i++) {
             if (orderList[i].floor > currentFloor) {
                 return orderList[i].floor;
             }
         }
     }
-    return -1; // No orders
+    return -1; // Ingen ordrer
 }
 
+// Håndterer stopp ved et etasjestopp. Fjerner alle ordrer for et gitt etasjen.
 void handleFloorStop(int floor){
     elevio_motorDirection(DIRN_STOP); 
     elevio_doorOpenLamp(1); 
-    nanosleep(&(struct timespec){3,0,},NULL);
+    nanosleep(&(struct timespec){3,0}, NULL);
     elevio_doorOpenLamp(0); 
-    removeOrder(floor); 
+    // Fjerner alle ordrer for denne etasjen (uavhengig av knapp)
+    for (int i = orderCount - 1; i >= 0; i--) {
+        if (orderList[i].floor == floor) {
+            removeOrder(orderList[i].floor, orderList[i].button);
+        }
+    }
     printOrders();
 }
 
 void checkButtonPresses(int floor, MotorDirection direction) {
-    for(int f = 0; f < N_FLOORS; f++){
-        for(int b = 0; b < N_BUTTONS; b++){
+    for (int f = 0; f < N_FLOORS; f++){
+        for (int b = 0; b < N_BUTTONS; b++){
             int btnPressed = elevio_callButton(f, b);
             if (btnPressed){
-                printf("Button pressed: Floor %d, button %d\n ", f, b);
+                printf("Button pressed: Floor %d, button %d\n", f, b);
                 addOrder(f, b);
                 printOrders();   
-                if(floor == f && direction == DIRN_STOP){
+                // Dersom heisen er stoppet og vi trykker i riktig etasje, stopp heisen
+                if (floor == f && direction == DIRN_STOP){
                     handleFloorStop(floor);
                 } else if (floor == 0 && floor == f){
                     handleFloorStop(floor);
-                } else if (floor == 3 && floor == f){
+                } else if (floor == N_FLOORS - 1 && floor == f){
                     handleFloorStop(floor);
                 }
             }
         }
     }
 }
-
 
 void checkOver(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
@@ -182,14 +239,16 @@ void checkInsideUnder(int floor, int nextOrder){
     }
 }
 
-void updateFloorIndicator(floor){
-    if(floor >= 0 && floor < 4){
+void updateFloorIndicator(int floor){
+    if (floor >= 0 && floor < N_FLOORS){
         elevio_floorIndicator(floor);
     }
 }
 
 int main(){
     elevio_init();
+    initOrderList();  // Initialiserer den dynamiske orderList
+
     int floor = elevio_floorSensor();  
     printf("=== Example Program ===\n");
     printf("Press the stop button on the elevator panel to exit\n");
@@ -197,12 +256,12 @@ int main(){
 
     elevio_motorDirection(DIRN_DOWN);
 
-    // Oppstart - Flytter til etg 1 (0) bestillinger tas imot 
+    // Oppstart - flytter til etasje 0 (markert som start) der bestillinger tas imot 
     while(kalibrering == false){
         updateButtonLamp();
         floor = elevio_floorSensor();
     
-        if(floor == 0){
+        if (floor == 0){
             printf("%d", kalibrering);
             kalibrering = true;
         }
@@ -217,16 +276,16 @@ int main(){
         floor = elevio_floorSensor();
         elevio_motorDirection(DIRN_STOP);
 
-        if(floor == 0){
+        if (floor == 0){
             direction = DIRN_UP;
-        } else if(floor == N_FLOORS-1){
+        } else if (floor == N_FLOORS - 1){
             direction = DIRN_DOWN;
         }
 
         checkButtonPresses(floor, direction);
         updateButtonLamp();
 
-        if(elevio_obstruction()){
+        if (elevio_obstruction()){
             elevio_stopLamp(1);
         } else {
             elevio_stopLamp(0);
@@ -264,13 +323,19 @@ int main(){
 
             direction = DIRN_STOP;
             elevio_motorDirection(DIRN_STOP);
-            removeOrder(nextOrder);
+            // Fjerner alle ordrer for etasjen nextOrder
+            for (int i = orderCount - 1; i >= 0; i--) {
+                if (orderList[i].floor == nextOrder) {
+                    removeOrder(orderList[i].floor, orderList[i].button);
+                }
+            }
             printOrders();
             nextOrder = findNextOrder(floor, direction);
         }
 
-        nanosleep(&(struct timespec){0, 20*1000*1000}, NULL);
+        nanosleep(&(struct timespec){0, 20 * 1000 * 1000}, NULL);
     }
 
+    free(orderList);
     return 0;
 }
