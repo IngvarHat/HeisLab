@@ -36,6 +36,12 @@ void removeOrder(int floor) {
     }
 }
 
+void DeleteAllorders(orderList){
+    memset(orderList, 0, sizeof(orderList));
+    orderCount=0; 
+
+}
+
 void printOrders() {
     printf("Current orders: \n");
     for (int i = 0; i < orderCount; i++){
