@@ -14,6 +14,7 @@ Order orderList [N_FLOORS * N_BUTTONS];
 int orderCount = 0;
 
 int stop_press=0; 
+int whole_floor=-2;
 
 void addOrder(int floor, ButtonType button) {
     for (int i = 0; i < orderCount; i++) {
@@ -187,6 +188,12 @@ void updateFloorIndicator(floor){
     }
 }
 
+void lastwholefloor(floor){
+    if(floor >= 0 && floor < 4){
+        whole_floor=floor;
+    }
+}
+
 int main(){
     elevio_init();
     int floor = elevio_floorSensor();  
@@ -235,7 +242,7 @@ int main(){
         
         int nextOrder = findNextOrder(floor, direction);
         while (nextOrder != -1) {
-            if (nextOrder > floor) {
+            if (nextOrder > floor &&nextOrder > whole_floor) {
                 elevio_motorDirection(DIRN_UP);
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
@@ -245,6 +252,7 @@ int main(){
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    lastwholefloor();
                     if (stop_press==1)
                     {
                         break;
@@ -255,16 +263,17 @@ int main(){
                     handleFloorStop(floor); 
                 }
                 
-            } else if (nextOrder < floor) {
+            } else if (nextOrder < floor || nextOrder <whole_floor) {
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
-                    StopButton(floor,direction, nextOrder);
+                    StopButton();
                     checkInsideUnder(floor, nextOrder);
                     checkUnder(floor, nextOrder);
                     checkButtonPresses(floor, direction);
                     updateButtonLamp();
                     updateFloorIndicator(floor);
+                    lastwholefloor();
                     if (stop_press==1)
                     {
                         break;
@@ -279,7 +288,7 @@ int main(){
             //elevio_motorDirection(DIRN_STOP);
             //removeOrder(nextOrder);
             printOrders();
-            stop_press==0;
+            stop_press=0;
             nextOrder = findNextOrder(floor, direction);
         }
 
