@@ -119,7 +119,27 @@ int findNextOrder(int currentFloor, MotorDirection direction) {
 void handleFloorStop(int floor){
     elevio_motorDirection(DIRN_STOP); 
     elevio_doorOpenLamp(1); 
-    nanosleep(&(struct timespec){3,0,},NULL);
+
+    struct timespec start, current;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    while (1) {
+        clock_gettime(CLOCK_MONOTONIC, &current);
+        double elapsed = (current.tv_sec - start.tv_sec) + (current.tv_nsec - start.tv_nsec) / 1e9;
+
+        // Reset the timer if obstruction is active
+        if (elevio_obstruction()) {
+            clock_gettime(CLOCK_MONOTONIC, &start);
+        }
+
+        if (elapsed >= 3.0 && !elevio_obstruction()) {
+            break;
+        }
+
+        checkButtonPresses(floor, DIRN_STOP);
+        updateButtonLamp();
+    }
+
     elevio_doorOpenLamp(0); 
     removeOrder(floor); 
     printOrders();
