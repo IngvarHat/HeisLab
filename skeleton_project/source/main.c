@@ -235,6 +235,9 @@ int main(){
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
                     StopButton();
+                    if (elevio_stopButton()){
+                        nextOrder = -1;
+                    }
                     checkOver(floor, nextOrder);
                     checkInsideOver(floor, nextOrder);
                     checkButtonPresses(floor, direction);
