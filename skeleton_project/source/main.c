@@ -58,7 +58,7 @@ void updateButtonLamp() {
     }
 }
 
-void StopButton() {
+void StopButton(int floor, MotorDirection direction, int nextorder) {
     if (elevio_stopButton()) {
         elevio_motorDirection(DIRN_STOP);
         elevio_stopLamp(1); // Turn on the stop button light
@@ -78,6 +78,7 @@ void StopButton() {
         }
 
         elevio_stopLamp(0); // Turn off the stop button light
+        nextorder=findNextOrder(floor,direction);
     }
 }
 
@@ -201,7 +202,7 @@ int main(){
             kalibrering = true;
         }
 
-        StopButton();
+        //StopButton();
         updateFloorIndicator(floor);
     }
     
@@ -226,7 +227,7 @@ int main(){
             elevio_stopLamp(0);
         }
         
-        StopButton();
+        //StopButton();
         
         int nextOrder = findNextOrder(floor, direction);
         while (nextOrder != -1) {
@@ -234,7 +235,7 @@ int main(){
                 elevio_motorDirection(DIRN_UP);
                 while (floor < nextOrder) {
                     floor = elevio_floorSensor();
-                    StopButton();
+                    StopButton(floor,direction, nextOrder);
                     checkOver(floor, nextOrder);
                     checkInsideOver(floor, nextOrder);
                     checkButtonPresses(floor, direction);
@@ -246,7 +247,7 @@ int main(){
                 elevio_motorDirection(DIRN_DOWN);
                 while (floor > nextOrder || floor == -1) {
                     floor = elevio_floorSensor();
-                    StopButton();
+                    StopButton(floor,direction, nextOrder);
                     checkInsideUnder(floor, nextOrder);
                     checkUnder(floor, nextOrder);
                     checkButtonPresses(floor, direction);
