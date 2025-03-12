@@ -29,11 +29,7 @@ void addOrder(int floor, ButtonType button) {
 
 void removeOrder(int floor) {
     int i = 0;
-<<<<<<< HEAD
-    while (i < orderCount) {
-=======
-    for (int i = 0; i < orderCount; i++) {
->>>>>>> origin/Fixed_Buttons
+    while (i < orderCount) { 
         if (orderList[i].floor == floor) {
             for (int j = i; j < orderCount - 1; j++) {
                 orderList[j] = orderList[j + 1];
