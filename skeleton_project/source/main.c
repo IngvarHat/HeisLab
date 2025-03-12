@@ -146,9 +146,16 @@ void checkButtonPresses(int floor, MotorDirection direction) {
 }
 
 
+void updateFloorIndicator(floor){
+    if(floor >= 0 && floor < 4){
+        elevio_floorIndicator(floor);
+    }
+}
+
 void checkOver(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == 0 && orderList[i].floor != nextOrder) {
+            updateFloorIndicator(floor); 
             handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_UP);
         }
@@ -158,6 +165,7 @@ void checkOver(int floor, int nextOrder){
 void checkUnder(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == 1 && orderList[i].floor != nextOrder) {
+            updateFloorIndicator(floor); 
             handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_DOWN);
         }
@@ -167,6 +175,7 @@ void checkUnder(int floor, int nextOrder){
 void checkInsideOver(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == 2 && orderList[i].floor != nextOrder) {
+            updateFloorIndicator(floor); 
             handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_UP);
         }
@@ -176,17 +185,13 @@ void checkInsideOver(int floor, int nextOrder){
 void checkInsideUnder(int floor, int nextOrder){
     for (int i = 0; i < orderCount; i++) {
         if (orderList[i].floor == floor && orderList[i].button == 2 && orderList[i].floor != nextOrder) {
+            updateFloorIndicator(floor); 
             handleFloorStop(orderList[i].floor);
             elevio_motorDirection(DIRN_DOWN);
         }
     }
 }
 
-void updateFloorIndicator(floor){
-    if(floor >= 0 && floor < 4){
-        elevio_floorIndicator(floor);
-    }
-}
 
 void lastwholefloor(floor){
     if(floor >= 0 && floor < 4){
@@ -284,9 +289,6 @@ int main(){
                 }
                 
             }
-            //direction = DIRN_STOP;
-            //elevio_motorDirection(DIRN_STOP);
-            //removeOrder(nextOrder);
             printOrders();
             stop_press=0;
             nextOrder = findNextOrder(floor, direction);
