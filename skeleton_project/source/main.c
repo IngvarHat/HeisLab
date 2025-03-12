@@ -28,13 +28,15 @@ void addOrder(int floor, ButtonType button) {
 }
 
 void removeOrder(int floor) {
-    for (int i = 0; i < orderCount; i++) {
+    int i = 0;
+    while (i < orderCount) {
         if (orderList[i].floor == floor) {
             for (int j = i; j < orderCount - 1; j++) {
                 orderList[j] = orderList[j + 1];
             }
             orderCount--;
-            break;
+        } else {
+            i++;
         }
     }
 }
@@ -119,6 +121,10 @@ void StopButton() {
 void handleFloorStop(int floor){
     elevio_motorDirection(DIRN_STOP); 
     elevio_doorOpenLamp(1); 
+    while (elevio_obstruction()) {
+        // Keep the doors open while there is an obstruction
+        nanosleep(&(struct timespec){0, 100*1000*1000}, NULL);
+    }
     nanosleep(&(struct timespec){3,0,},NULL);
     elevio_doorOpenLamp(0); 
     removeOrder(floor); 
@@ -126,6 +132,7 @@ void handleFloorStop(int floor){
 }
 
 void checkButtonPresses(int floor, MotorDirection direction) {
+    int currentfloor = elevio_floorSensor();
     for(int f = 0; f < N_FLOORS; f++){
         for(int b = 0; b < N_BUTTONS; b++){
             int btnPressed = elevio_callButton(f, b);
@@ -133,18 +140,13 @@ void checkButtonPresses(int floor, MotorDirection direction) {
                 printf("Button pressed: Floor %d, button %d\n ", f, b);
                 addOrder(f, b);
                 printOrders();   
-                if(floor == f && direction == DIRN_STOP){
-                    handleFloorStop(floor);
-                } else if (floor == 0 && floor == f){
-                    handleFloorStop(floor);
-                } else if (floor == 3 && floor == f){
-                    handleFloorStop(floor);
+                if (f == currentfloor) {
+                    handleFloorStop(f);
                 }
             }
         }
     }
 }
-
 
 void updateFloorIndicator(floor){
     if(floor >= 0 && floor < 4){
